@@ -3,14 +3,14 @@ package app
 import (
 	"fmt"
 	"poebot/config"
-	"poebot/connections"
-	"poebot/handlers"
+	"poebot/modules/connections"
+	"poebot/modules/handlers"
 )
 
 // App is the main application struct
 type Bot struct {
 	Config      *config.Config
-	ItemHandler *handlers.ItemHandler
+	ItemHandler []*handlers.ItemHandler
 }
 
 // Init initializes the application
@@ -25,15 +25,19 @@ func Init() (*Bot, error) {
 	}
 	bot.Config = cfg
 
-	conn, err := connections.NewWSConnection(bot.Config.User.Poesessid, "LQEV88GUn")
-	if err != nil {
-		return nil, fmt.Errorf("create ws listener failed: %v", err)
-	}
 	errChan := make(chan error)
 	contChan := make(chan int)
 
-	itemHandler := handlers.NewItemHandler(bot.Config.User.Poesessid, contChan, errChan, conn)
-	bot.ItemHandler = itemHandler
+	for _, link := range cfg.Trade.Links {
+
+		conn, err := connections.NewWSConnection(bot.Config.User.Poesessid, link)
+		if err != nil {
+			return nil, fmt.Errorf("create ws listener failed: %v", err)
+		}
+
+		itemHandler := handlers.NewItemHandler(bot.Config.User.Poesessid, contChan, errChan, conn)
+		bot.ItemHandler = append(bot.ItemHandler, itemHandler)
+	}
 
 	return bot, nil
 }
@@ -41,7 +45,11 @@ func Init() (*Bot, error) {
 // Run starts the application
 func (bot *Bot) Run() error {
 
-	go bot.ItemHandler.Serve()
+	for _, handler := range bot.ItemHandler {
+
+		go handler.Serve()
+
+	}
 
 	return nil
 }
@@ -49,6 +57,10 @@ func (bot *Bot) Run() error {
 // Stop closes the application and cleans up
 func (bot *Bot) Stop() {
 
-	bot.ItemHandler.Close()
+	for _, handler := range bot.ItemHandler {
+
+		handler.Close()
+
+	}
 
 }

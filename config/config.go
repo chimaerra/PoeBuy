@@ -11,6 +11,9 @@ type Config struct {
 	User struct {
 		Poesessid string `yaml:"poesessid" env:"POESESSID"`
 	} `yaml:"user"`
+	Trade struct {
+		Links []string `yaml:"links"`
+	} `yaml:"trade"`
 }
 
 // LoadConfig loads the config from the environment variables

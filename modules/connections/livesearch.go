@@ -2,14 +2,14 @@ package connections
 
 import (
 	"fmt"
-	"poebot/connections/headers"
-	"poebot/connections/models"
+	"poebot/modules/connections/headers"
+	"poebot/modules/connections/models"
 
 	"github.com/gorilla/websocket"
 )
 
 func NewWSConnection(poesessid string, tag string) (*websocket.Conn, error) {
-	conn, _, err := websocket.DefaultDialer.Dial(fmt.Sprintf("wss://www.pathofexile.com/api/trade/live/Ancestor/%v", tag), headers.GetLivesearchHeaders(poesessid))
+	conn, _, err := websocket.DefaultDialer.Dial(fmt.Sprintf("wss://www.pathofexile.com/api/trade/live/Affliction/%v", tag), headers.GetLivesearchHeaders(poesessid))
 	if err != nil {
 		return nil, fmt.Errorf("websocket connection error: %v", err)
 	}

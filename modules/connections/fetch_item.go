@@ -7,7 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"poebot/connections/models"
+	"poebot/modules/connections/models"
 
 	"github.com/andybalholm/brotli"
 )

@@ -1,22 +1,30 @@
 package main
 
 import (
+	_ "embed"
+	"errors"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
 	"poebot/app"
 	"syscall"
-	"time"
-
-	"github.com/go-vgo/robotgo"
 )
+
+//go:embed config.yaml.example
+var template string
 
 func main() {
 
-	time.Sleep(time.Second)
+	if _, err := os.Stat("./config.yaml"); errors.Is(err, os.ErrNotExist) {
+		os.WriteFile("config.yaml", []byte(template), 0644)
+		fmt.Println("You should fill configuration file (config.yaml)\nPress CTRL-C to exit...")
+		stop := make(chan os.Signal, 1)
+		signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
+		<-stop
+		return
+	}
 
-	robotgo.MoveSmooth(100, 100)
-	return
 	// Create a new bot instance
 	bot, err := app.Init()
 	if err != nil {
