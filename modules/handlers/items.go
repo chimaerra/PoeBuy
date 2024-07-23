@@ -3,9 +3,9 @@ package handlers
 import (
 	"log"
 	"net/http"
-	"poebot/modules/connections"
-	"poebot/modules/connections/headers"
-	"poebot/modules/connections/models"
+	"poebuy/modules/connections"
+	"poebuy/modules/connections/headers"
+	"poebuy/modules/connections/models"
 	"strings"
 
 	"github.com/gorilla/websocket"

@@ -1,35 +1,68 @@
 package config
 
 import (
-	"log"
+	"fmt"
+	"os"
+	"poebuy/utils"
+
+	"errors"
 
 	"github.com/ilyakaznacheev/cleanenv"
 )
 
+var ErrorNoConfigFile = errors.New("Config file not found")
+
 // Config is the main configuration struct
 type Config struct {
-	User struct {
-		Poesessid string `yaml:"poesessid" env:"POESESSID"`
-	} `yaml:"user"`
-	Trade struct {
-		Links []string `yaml:"links"`
-	} `yaml:"trade"`
+	General General `yaml:"general"`
+	Trade   Trade   `yaml:"trade"`
 }
 
-// LoadConfig loads the config from the environment variables
+type General struct {
+	Poesessid string `yaml:"poesessid"`
+}
+
+type Trade struct {
+	League string `yaml:"league"`
+	Links  []Link `yaml:"links"`
+}
+
+type Link struct {
+	Name    string `yaml:"name"`
+	Code    string `yaml:"code"`
+	IsActiv bool   `yaml:"-"`
+}
+
+// LoadConfig loads the config from config file
 func LoadConfig() (*Config, error) {
 
 	cfg := &Config{}
-	err := cleanenv.ReadEnv(cfg)
-	if err != nil {
-		log.Println("error reading environment")
-		return nil, err
-	}
-	err = cleanenv.ReadConfig("config.yaml", cfg)
-	if err != nil {
-		log.Println("error reading config file")
-		return nil, err
+
+	if !configFileExists() {
+		return cfg, ErrorNoConfigFile
 	}
 
+	err := cleanenv.ReadConfig("config.yaml", cfg)
+	if err != nil {
+		return nil, fmt.Errorf("error reading config file: %v", err)
+	}
+
+	cfg.General.Poesessid, _ = utils.Decrypt(cfg.General.Poesessid)
+
 	return cfg, nil
+}
+
+func (cfg *Config) Save() {
+	encPoe, _ := utils.Encrypt(cfg.General.Poesessid)
+	cfg.General.Poesessid = encPoe
+
+	utils.WriteStructToYAMLFile("config.yaml", cfg)
+}
+
+func configFileExists() bool {
+	_, err := os.Stat("config.yaml")
+	if os.IsNotExist(err) {
+		return false
+	}
+	return err == nil
 }

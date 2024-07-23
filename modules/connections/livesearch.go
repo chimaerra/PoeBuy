@@ -2,8 +2,8 @@ package connections
 
 import (
 	"fmt"
-	"poebot/modules/connections/headers"
-	"poebot/modules/connections/models"
+	"poebuy/modules/connections/headers"
+	"poebuy/modules/connections/models"
 
 	"github.com/gorilla/websocket"
 )

@@ -1,40 +1,43 @@
 package main
 
 import (
-	_ "embed"
-	"errors"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
-	"poebot/app"
+	"poebuy/config"
+	"poebuy/modules/bot"
+	"poebuy/modules/ui"
+	"poebuy/utils"
 	"syscall"
 )
 
-//go:embed config.yaml.example
-var template string
-
 func main() {
 
-	if _, err := os.Stat("./config.yaml"); errors.Is(err, os.ErrNotExist) {
-		os.WriteFile("config.yaml", []byte(template), 0644)
-		fmt.Println("You should fill configuration file (config.yaml)\nPress CTRL-C to exit...")
-		stop := make(chan os.Signal, 1)
-		signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
-		<-stop
+	logger := utils.NewLogger()
+	defer logger.Close()
+
+	// Load config from environment variables
+	cfg, err := config.LoadConfig()
+	if err != nil && err != config.ErrorNoConfigFile {
+		logger.Errorf("config load failed: %v", err)
 		return
 	}
 
+	ui.ShowUI(cfg, logger)
+	return
+
 	// Create a new bot instance
-	bot, err := app.Init()
+	bot, err := bot.NewBot(cfg)
 	if err != nil {
-		log.Fatalf("error app initialisation: %v", err)
+		logger.Errorf("error app initialisation: %v", err)
+		return
 	}
 
 	// Start the bot
 	err = bot.Run()
 	if err != nil {
-		log.Fatalf("error app run: %v", err)
+		logger.Errorf("error app run: %v", err)
+		return
 	}
 
 	// Wait here until CTRL-C or other term signal is received.

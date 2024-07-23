@@ -1,10 +1,10 @@
-package app
+package bot
 
 import (
 	"fmt"
-	"poebot/config"
-	"poebot/modules/connections"
-	"poebot/modules/handlers"
+	"poebuy/config"
+	"poebuy/modules/connections"
+	"poebuy/modules/handlers"
 )
 
 // App is the main application struct
@@ -14,15 +14,10 @@ type Bot struct {
 }
 
 // Init initializes the application
-func Init() (*Bot, error) {
+func NewBot(cfg *config.Config) (*Bot, error) {
 
 	bot := &Bot{}
 
-	// Load config from environment variables
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		return nil, fmt.Errorf("config load failed: %v", err)
-	}
 	bot.Config = cfg
 
 	errChan := make(chan error)
@@ -30,12 +25,12 @@ func Init() (*Bot, error) {
 
 	for _, link := range cfg.Trade.Links {
 
-		conn, err := connections.NewWSConnection(bot.Config.User.Poesessid, link)
+		conn, err := connections.NewWSConnection(bot.Config.General.Poesessid, link.Code)
 		if err != nil {
 			return nil, fmt.Errorf("create ws listener failed: %v", err)
 		}
 
-		itemHandler := handlers.NewItemHandler(bot.Config.User.Poesessid, contChan, errChan, conn)
+		itemHandler := handlers.NewItemHandler(bot.Config.General.Poesessid, contChan, errChan, conn)
 		bot.ItemHandler = append(bot.ItemHandler, itemHandler)
 	}
 
