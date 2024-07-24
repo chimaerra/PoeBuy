@@ -3,7 +3,6 @@ package connections
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"net/http"
 )
 
@@ -32,10 +31,11 @@ func (w *Whisper) Whisper(token string) error {
 		return fmt.Errorf("whisper request error: %v", err)
 
 	}
+	defer whisperResp.Body.Close()
+
 	if whisperResp.StatusCode != 200 {
-		log.Println("Whisper error: ", whisperResp.Status, whisperReq.RequestURI)
+		return fmt.Errorf("Whisper error: %v", whisperResp.Status)
 	}
-	whisperResp.Body.Close()
 
 	return nil
 }

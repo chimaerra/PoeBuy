@@ -1,10 +1,9 @@
 module poebuy
 
-go 1.19
+go 1.22
 
 require (
 	fyne.io/fyne/v2 v2.4.5
-	github.com/andybalholm/brotli v1.0.5
 	github.com/gorilla/websocket v1.5.0
 	github.com/ilyakaznacheev/cleanenv v1.5.0
 	github.com/sqweek/dialog v0.0.0-20240226140203-065105509627

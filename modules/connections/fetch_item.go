@@ -2,14 +2,12 @@ package connections
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"poebuy/modules/connections/models"
-
-	"github.com/andybalholm/brotli"
 )
 
 type Fetcher struct {
@@ -24,13 +22,13 @@ func NewFetcher(client *http.Client, header http.Header) *Fetcher {
 	}
 }
 
-func (f *Fetcher) FetchItems(items []string) (*[]models.FetchItem, error) {
+func (f *Fetcher) FetchItems(items []string, code string) (*[]models.FetchItem, error) {
 
 	entities := []models.FetchItem{}
 
 	for _, item := range items {
 		reqBody := bytes.NewBuffer([]byte{})
-		ItemReq, err := http.NewRequest("GET", fmt.Sprintf("https://www.pathofexile.com/api/trade/fetch/%v?query=LQEV88GUn", item), reqBody)
+		ItemReq, err := http.NewRequest("GET", fmt.Sprintf("https://www.pathofexile.com/api/trade/fetch/%v?query=%v", item, code), reqBody)
 		if err != nil {
 			return nil, fmt.Errorf("item request creation error: %v", err)
 
@@ -42,14 +40,19 @@ func (f *Fetcher) FetchItems(items []string) (*[]models.FetchItem, error) {
 			return nil, fmt.Errorf("reqvest sending error: %v", err)
 
 		}
+		defer ItemResp.Body.Close()
+
 		if ItemResp.StatusCode != http.StatusOK {
-			log.Println("Get Item error: ", ItemResp.Status)
 			continue
 		}
 
-		br := brotli.NewReader(ItemResp.Body)
+		gz, err := gzip.NewReader(ItemResp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("request decoding error: %v", err)
 
-		bodyBytes, err := io.ReadAll(br)
+		}
+
+		bodyBytes, err := io.ReadAll(gz)
 		if err != nil {
 			return nil, fmt.Errorf("request reading error: %v", err)
 
@@ -61,7 +64,6 @@ func (f *Fetcher) FetchItems(items []string) (*[]models.FetchItem, error) {
 			return nil, fmt.Errorf("item unmarshal error: %v", err)
 		}
 		entities = append(entities, itemInfo)
-		ItemResp.Body.Close()
 	}
 
 	return &entities, nil

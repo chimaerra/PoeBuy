@@ -1,61 +1,64 @@
 package bot
 
 import (
-	"fmt"
 	"poebuy/config"
-	"poebuy/modules/connections"
-	"poebuy/modules/handlers"
+	"poebuy/modules/watchers"
+	"poebuy/utils"
 )
 
 // App is the main application struct
 type Bot struct {
-	Config      *config.Config
-	ItemHandler []*handlers.ItemHandler
+	config   *config.Config
+	Watchers []*watchers.ItemWatcher
+	stopChan chan string
+	ErrChan  chan error
+	logger   *utils.Logger
 }
 
 // Init initializes the application
-func NewBot(cfg *config.Config) (*Bot, error) {
+func NewBot(cfg *config.Config, logger *utils.Logger) (*Bot, error) {
 
-	bot := &Bot{}
-
-	bot.Config = cfg
-
-	errChan := make(chan error)
-	contChan := make(chan int)
-
-	for _, link := range cfg.Trade.Links {
-
-		conn, err := connections.NewWSConnection(bot.Config.General.Poesessid, link.Code)
-		if err != nil {
-			return nil, fmt.Errorf("create ws listener failed: %v", err)
-		}
-
-		itemHandler := handlers.NewItemHandler(bot.Config.General.Poesessid, contChan, errChan, conn)
-		bot.ItemHandler = append(bot.ItemHandler, itemHandler)
+	bot := &Bot{
+		stopChan: make(chan string),
+		ErrChan:  make(chan error),
+		config:   cfg,
+		logger:   logger,
 	}
+
+	go bot.errorWriter()
 
 	return bot, nil
 }
 
-// Run starts the application
-func (bot *Bot) Run() error {
-
-	for _, handler := range bot.ItemHandler {
-
-		go handler.Serve()
-
+func (bot *Bot) WatchItem(code string) error {
+	watcher, err := watchers.NewItemWatcher(bot.config.General.Poesessid, bot.config.Trade.League, code, bot.stopChan, bot.ErrChan)
+	if err != nil {
+		return err
 	}
+
+	bot.Watchers = append(bot.Watchers, watcher)
+
+	go watcher.Watch()
 
 	return nil
 }
 
+func (bot *Bot) StopWatcher(code string) {
+	bot.stopChan <- code
+}
+
 // Stop closes the application and cleans up
-func (bot *Bot) Stop() {
+func (bot *Bot) StopAllWatchers() {
 
-	for _, handler := range bot.ItemHandler {
-
-		handler.Close()
-
+	for _, watcher := range bot.Watchers {
+		watcher.Stop()
 	}
 
+}
+
+func (bot *Bot) errorWriter() {
+	for {
+		err := <-bot.ErrChan
+		bot.logger.Error(err.Error())
+	}
 }

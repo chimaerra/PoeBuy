@@ -8,8 +8,8 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func NewWSConnection(poesessid string, tag string) (*websocket.Conn, error) {
-	conn, _, err := websocket.DefaultDialer.Dial(fmt.Sprintf("wss://www.pathofexile.com/api/trade/live/Affliction/%v", tag), headers.GetLivesearchHeaders(poesessid))
+func NewWSConnection(poesessid string, league string, code string) (*websocket.Conn, error) {
+	conn, _, err := websocket.DefaultDialer.Dial(fmt.Sprintf("wss://www.pathofexile.com/api/trade/live/%v/%v", league, code), headers.GetLivesearchHeaders(poesessid))
 	if err != nil {
 		return nil, fmt.Errorf("websocket connection error: %v", err)
 	}

@@ -2,6 +2,7 @@ package ui
 
 import (
 	"poebuy/config"
+	"poebuy/modules/bot"
 	"poebuy/modules/connections"
 	"poebuy/modules/connections/models"
 	"poebuy/resources"
@@ -22,15 +23,17 @@ type UI struct {
 	poesessidwindow *PoessidWindow
 	cfg             *config.Config
 	info            *models.TradeInfo
+	bot             *bot.Bot
 }
 
 const _appId = "com.kelaron.poebuy"
 
-func ShowUI(cfg *config.Config, logger *utils.Logger) {
+func ShowUI(cfg *config.Config, logger *utils.Logger, bot *bot.Bot) {
 
-	ui := &UI{}
-
-	ui.cfg = cfg
+	ui := &UI{
+		cfg: cfg,
+		bot: bot,
+	}
 
 	app := app.NewWithID(_appId)
 	app.Settings().SetTheme(theme.DarkTheme())
@@ -64,7 +67,7 @@ func (ui *UI) ShowPoessidWindow() {
 
 func (ui *UI) ShowMainWindow() {
 	ui.mainWindow = NewMainWindow(ui.app, ui.info, ui.cfg)
-	ui.mainWindow.SetOnClosed(ui.cfg.Save)
+	ui.mainWindow.SetOnClosed(ui.closeApp)
 	ui.mainWindow.OnAddTrade(ui.addTrade)
 	ui.mainWindow.OnTableCellClick(ui.tableCellClick)
 	ui.mainWindow.Show()
@@ -109,13 +112,20 @@ func (ui *UI) addTrade() {
 }
 
 func (ui *UI) tableCellClick(id widget.TableCellID) {
+
 	ui.mainWindow.tradeTable.Unselect(id)
 
 	switch id.Col {
 	case 2:
 		if ui.cfg.Trade.Links[id.Row].IsActiv {
+			ui.bot.StopWatcher(ui.cfg.Trade.Links[id.Row].Code)
 			ui.cfg.Trade.Links[id.Row].IsActiv = false
 		} else {
+			err := ui.bot.WatchItem(ui.cfg.Trade.Links[id.Row].Code)
+			if err != nil {
+				dialog.Message("Ошибка отслеживания ссылки: %v", err).Title("Live search error").Error()
+				return
+			}
 			ui.cfg.Trade.Links[id.Row].IsActiv = true
 		}
 	case 3:
@@ -123,4 +133,10 @@ func (ui *UI) tableCellClick(id widget.TableCellID) {
 	default:
 		return
 	}
+	ui.mainWindow.tradeTable.Refresh()
+}
+
+func (ui *UI) closeApp() {
+	ui.cfg.Save()
+	ui.bot.StopAllWatchers()
 }
