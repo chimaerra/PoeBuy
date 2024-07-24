@@ -98,9 +98,7 @@ func (w *ItemWatcher) Stop() {
 func (w *ItemWatcher) Stopper() {
 
 	for {
-		fmt.Printf("My code: %v, waiting stop signal\n", w.Code)
 		forClose := <-w.StopChan
-		fmt.Printf("My code: %v, i recieved: %v\n", w.Code, forClose)
 		if forClose == w.Code {
 			w.WSConnection.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 			w.WSConnection.Close()
