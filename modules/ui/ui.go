@@ -123,7 +123,7 @@ func (ui *UI) tableCellClick(id widget.TableCellID) {
 		} else {
 			err := ui.bot.WatchItem(ui.cfg.Trade.Links[id.Row].Code)
 			if err != nil {
-				dialog.Message("Ошибка отслеживания ссылки: %v", err).Title("Live search error").Error()
+				dialog.Message("Link connection error, check the link is correct\n(%v)", err).Title("Live search error").Error()
 				return
 			}
 			ui.cfg.Trade.Links[id.Row].IsActiv = true
