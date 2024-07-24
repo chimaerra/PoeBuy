@@ -124,11 +124,32 @@ func NewMainWindow(app fyne.App, info *models.TradeInfo, cfg *config.Config) *Ma
 	mw.tradeTable = tradeTable
 	tradeTable.Move(fyne.NewPos(15, 300))
 	tradeTable.Resize(fyne.NewSize(765, 280))
-	tradeTable.SetColumnWidth(0, 480)
+	tradeTable.SetColumnWidth(0, 430)
 	tradeTable.SetColumnWidth(1, 100)
-	tradeTable.SetColumnWidth(2, 30)
-	tradeTable.SetColumnWidth(3, 30)
+	tradeTable.SetColumnWidth(2, 55)
+	tradeTable.SetColumnWidth(3, 60)
 	tradeTable.SetColumnWidth(4, 100)
+	tradeTable.CreateHeader = func() fyne.CanvasObject {
+		label := widget.NewLabel("")
+		return label
+	}
+	tradeTable.UpdateHeader = func(id widget.TableCellID, o fyne.CanvasObject) {
+		label := o.(*widget.Label)
+		switch id.Col {
+		case 0:
+			label.SetText("Name")
+		case 1:
+			label.SetText("Link")
+		case 2:
+			label.SetText("Active")
+		case 3:
+			label.SetText("Delete")
+		case 4:
+			label.SetText("Delay")
+		}
+	}
+	tradeTable.ShowHeaderRow = true
+	tradeTable.Refresh()
 
 	mw.SetContent(container.NewWithoutLayout(
 		leagueLabel,
