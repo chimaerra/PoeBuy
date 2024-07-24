@@ -30,6 +30,7 @@ type Trade struct {
 type Link struct {
 	Name    string `yaml:"name"`
 	Code    string `yaml:"code"`
+	Delay   int64  `yaml:"delay"`
 	IsActiv bool   `yaml:"-"`
 }
 

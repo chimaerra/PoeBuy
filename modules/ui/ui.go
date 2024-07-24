@@ -8,6 +8,7 @@ import (
 	"poebuy/resources"
 	"poebuy/utils"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -21,6 +22,7 @@ type UI struct {
 	app             fyne.App
 	mainWindow      *MainWindow
 	poesessidwindow *PoessidWindow
+	delayWindow     *DelayWindow
 	cfg             *config.Config
 	info            *models.TradeInfo
 	bot             *bot.Bot
@@ -73,6 +75,12 @@ func (ui *UI) ShowMainWindow() {
 	ui.mainWindow.Show()
 }
 
+func (ui *UI) ShowDelayWindow(delay int64, linkId int) {
+	ui.delayWindow = NewDelayWindow(ui.app, delay, linkId)
+	ui.delayWindow.OnConfirmDelay(ui.saveDelay)
+	ui.delayWindow.Show()
+}
+
 func (ui *UI) savePoessid() {
 	info, err := connections.GetTradeInfo(ui.poesessidwindow.poesessidEntry.Text)
 	if err != nil {
@@ -121,7 +129,7 @@ func (ui *UI) tableCellClick(id widget.TableCellID) {
 			ui.bot.StopWatcher(ui.cfg.Trade.Links[id.Row].Code)
 			ui.cfg.Trade.Links[id.Row].IsActiv = false
 		} else {
-			err := ui.bot.WatchItem(ui.cfg.Trade.Links[id.Row].Code)
+			err := ui.bot.WatchItem(ui.cfg.Trade.Links[id.Row].Code, ui.cfg.Trade.Links[id.Row].Delay)
 			if err != nil {
 				dialog.Message("Link connection error, check the link is correct\n(%v)", err).Title("Live search error").Error()
 				return
@@ -130,6 +138,8 @@ func (ui *UI) tableCellClick(id widget.TableCellID) {
 		}
 	case 3:
 		ui.cfg.Trade.Links = append(ui.cfg.Trade.Links[:id.Row], ui.cfg.Trade.Links[id.Row+1:]...)
+	case 4:
+		ui.ShowDelayWindow(ui.cfg.Trade.Links[id.Row].Delay, id.Row)
 	default:
 		return
 	}
@@ -139,4 +149,10 @@ func (ui *UI) tableCellClick(id widget.TableCellID) {
 func (ui *UI) closeApp() {
 	ui.cfg.Save()
 	ui.bot.StopAllWatchers()
+}
+
+func (ui *UI) saveDelay() {
+	delay, _ := strconv.Atoi(ui.delayWindow.delayEntry.Text)
+	ui.cfg.Trade.Links[ui.delayWindow.linkID].Delay = int64(delay)
+	ui.delayWindow.Close()
 }

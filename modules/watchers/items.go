@@ -1,11 +1,13 @@
 package watchers
 
 import (
+	"fmt"
 	"net/http"
 	"poebuy/modules/connections"
 	"poebuy/modules/connections/headers"
 	"poebuy/modules/connections/models"
 	"strings"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -18,9 +20,10 @@ type ItemWatcher struct {
 	StopChan     chan string
 	ErrChan      chan error
 	Working      bool
+	Delay        time.Duration
 }
 
-func NewItemWatcher(poesseid string, league string, code string, stopChan chan string, errChan chan error) (*ItemWatcher, error) {
+func NewItemWatcher(poesseid string, league string, code string, stopChan chan string, errChan chan error, delay int64) (*ItemWatcher, error) {
 
 	client := &http.Client{}
 
@@ -37,6 +40,7 @@ func NewItemWatcher(poesseid string, league string, code string, stopChan chan s
 		StopChan:     stopChan,
 		ErrChan:      errChan,
 		Working:      false,
+		Delay:        time.Millisecond * time.Duration(delay),
 	}
 
 	go watcher.Stopper()
@@ -50,6 +54,7 @@ func (w *ItemWatcher) Watch() {
 	w.Working = true
 
 	for {
+		time.Sleep(w.Delay)
 		if !w.Working {
 			return
 		}
@@ -63,7 +68,12 @@ func (w *ItemWatcher) Watch() {
 			continue
 		}
 
-		itemsInfo, err := w.Fetcher.FetchItems(ls.New, w.Code)
+		length := len(ls.New)
+		if w.Delay != 0 && length > 3 {
+			length = 3
+		}
+
+		itemsInfo, err := w.Fetcher.FetchItems(ls.New[:length], w.Code)
 		if err != nil {
 			w.ErrChan <- err
 			continue
@@ -88,11 +98,16 @@ func (w *ItemWatcher) Stop() {
 func (w *ItemWatcher) Stopper() {
 
 	for {
+		fmt.Printf("My code: %v, waiting stop signal\n", w.Code)
 		forClose := <-w.StopChan
+		fmt.Printf("My code: %v, i recieved: %v\n", w.Code, forClose)
 		if forClose == w.Code {
 			w.WSConnection.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 			w.WSConnection.Close()
 			w.Working = false
+			return
+		} else {
+			w.StopChan <- forClose
 		}
 	}
 

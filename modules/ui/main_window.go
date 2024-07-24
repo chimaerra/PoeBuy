@@ -1,9 +1,11 @@
 package ui
 
 import (
+	"fmt"
 	"image/color"
 	"poebuy/config"
 	"poebuy/modules/connections/models"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -78,7 +80,7 @@ func NewMainWindow(app fyne.App, info *models.TradeInfo, cfg *config.Config) *Ma
 	// tradeTable := widget.NewTableWithHeaders(nil, nil, nil)
 	tradeTable := widget.NewTable(
 		func() (int, int) {
-			return len(cfg.Trade.Links), 4
+			return len(cfg.Trade.Links), 5
 		},
 		func() fyne.CanvasObject {
 			label := widget.NewLabel("")
@@ -113,15 +115,20 @@ func NewMainWindow(app fyne.App, info *models.TradeInfo, cfg *config.Config) *Ma
 				label.Hide()
 				icon.Show()
 				icon.SetResource(theme.DeleteIcon())
+			case 4:
+				label.Show()
+				icon.Hide()
+				label.SetText(millisecondsToHumanReadable(cfg.Trade.Links[i.Row].Delay))
 			}
 		})
 	mw.tradeTable = tradeTable
 	tradeTable.Move(fyne.NewPos(15, 300))
 	tradeTable.Resize(fyne.NewSize(765, 280))
-	tradeTable.SetColumnWidth(0, 500)
+	tradeTable.SetColumnWidth(0, 480)
 	tradeTable.SetColumnWidth(1, 100)
 	tradeTable.SetColumnWidth(2, 30)
 	tradeTable.SetColumnWidth(3, 30)
+	tradeTable.SetColumnWidth(4, 100)
 
 	mw.SetContent(container.NewWithoutLayout(
 		leagueLabel,
@@ -144,4 +151,24 @@ func (w *MainWindow) OnAddTrade(f func()) {
 
 func (w *MainWindow) OnTableCellClick(f func(id widget.TableCellID)) {
 	w.tradeTable.OnSelected = f
+}
+
+func millisecondsToHumanReadable(ms int64) string {
+
+	if ms == 0 {
+		return "no delay"
+	}
+
+	t := time.Duration(ms) * time.Millisecond
+
+	switch {
+	case t < time.Second:
+		return fmt.Sprintf("%v ms", float32(ms))
+	case t < time.Minute:
+		return fmt.Sprintf("%v s", float32(ms)/1000)
+	case t < time.Hour:
+		return fmt.Sprintf("%v min", float32(ms)/1000/60)
+	default:
+		return fmt.Sprintf("%v h", float32(ms)/1000/60/60)
+	}
 }

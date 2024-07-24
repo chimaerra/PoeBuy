@@ -30,8 +30,8 @@ func NewBot(cfg *config.Config, logger *utils.Logger) (*Bot, error) {
 	return bot, nil
 }
 
-func (bot *Bot) WatchItem(code string) error {
-	watcher, err := watchers.NewItemWatcher(bot.config.General.Poesessid, bot.config.Trade.League, code, bot.stopChan, bot.ErrChan)
+func (bot *Bot) WatchItem(code string, delay int64) error {
+	watcher, err := watchers.NewItemWatcher(bot.config.General.Poesessid, bot.config.Trade.League, code, bot.stopChan, bot.ErrChan, delay)
 	if err != nil {
 		return err
 	}
