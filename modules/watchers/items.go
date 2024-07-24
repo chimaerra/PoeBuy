@@ -1,7 +1,6 @@
 package watchers
 
 import (
-	"fmt"
 	"net/http"
 	"poebuy/modules/connections"
 	"poebuy/modules/connections/headers"
@@ -21,6 +20,7 @@ type ItemWatcher struct {
 	ErrChan      chan error
 	Working      bool
 	Delay        time.Duration
+	readReady    bool
 }
 
 func NewItemWatcher(poesseid string, league string, code string, stopChan chan string, errChan chan error, delay int64) (*ItemWatcher, error) {
@@ -41,6 +41,7 @@ func NewItemWatcher(poesseid string, league string, code string, stopChan chan s
 		ErrChan:      errChan,
 		Working:      false,
 		Delay:        time.Millisecond * time.Duration(delay),
+		readReady:    true,
 	}
 
 	go watcher.Stopper()
@@ -53,8 +54,11 @@ func (w *ItemWatcher) Watch() {
 
 	w.Working = true
 
+	if w.Delay > 0 {
+		go w.delayer()
+	}
+
 	for {
-		time.Sleep(w.Delay)
 		if !w.Working {
 			return
 		}
@@ -65,6 +69,9 @@ func (w *ItemWatcher) Watch() {
 				break
 			}
 			w.ErrChan <- err
+			continue
+		}
+		if w.Delay > 0 && !w.readReady {
 			continue
 		}
 
@@ -78,13 +85,16 @@ func (w *ItemWatcher) Watch() {
 			w.ErrChan <- err
 			continue
 		}
-		for _, itemInfo := range *itemsInfo {
+
+		for _, itemInfo := range itemsInfo {
 			err := w.Whisper.Whisper(itemInfo.Result[0].Listing.WhisperToken)
 			if err != nil {
 				w.ErrChan <- err
 				continue
 			}
 		}
+
+		w.readReady = false
 	}
 }
 
@@ -109,4 +119,14 @@ func (w *ItemWatcher) Stopper() {
 		}
 	}
 
+}
+
+func (w *ItemWatcher) delayer() {
+	for {
+		if !w.Working {
+			return
+		}
+		w.readReady = true
+		time.Sleep(w.Delay)
+	}
 }

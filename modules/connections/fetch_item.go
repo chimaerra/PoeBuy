@@ -22,9 +22,9 @@ func NewFetcher(client *http.Client, header http.Header) *Fetcher {
 	}
 }
 
-func (f *Fetcher) FetchItems(items []string, code string) (*[]models.FetchItem, error) {
+func (f *Fetcher) FetchItems(items []string, code string) ([]*models.FetchItem, error) {
 
-	entities := []models.FetchItem{}
+	entities := make([]*models.FetchItem, 0, 5)
 
 	for _, item := range items {
 		reqBody := bytes.NewBuffer([]byte{})
@@ -58,7 +58,7 @@ func (f *Fetcher) FetchItems(items []string, code string) (*[]models.FetchItem, 
 
 		}
 
-		itemInfo := models.FetchItem{}
+		itemInfo := &models.FetchItem{}
 		err = json.Unmarshal(bodyBytes, &itemInfo)
 		if err != nil {
 			return nil, fmt.Errorf("item unmarshal error: %v", err)
@@ -66,5 +66,5 @@ func (f *Fetcher) FetchItems(items []string, code string) (*[]models.FetchItem, 
 		entities = append(entities, itemInfo)
 	}
 
-	return &entities, nil
+	return entities, nil
 }

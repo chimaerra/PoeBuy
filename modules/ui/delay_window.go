@@ -3,6 +3,7 @@ package ui
 //go:generate fyne bundle --package resources --name ResourceDivineIco -o resources/icon.go divine.ico
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -74,6 +75,9 @@ func validateDelay(s string) error {
 	if s == "" {
 		return nil
 	}
-	_, err := strconv.Atoi(s)
+	i, err := strconv.Atoi(s)
+	if i < 0 {
+		return errors.New("number must be positive")
+	}
 	return err
 }

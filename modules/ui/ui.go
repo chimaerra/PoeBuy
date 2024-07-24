@@ -152,6 +152,10 @@ func (ui *UI) closeApp() {
 }
 
 func (ui *UI) saveDelay() {
+	if ui.delayWindow.delayEntry.Validate() != nil {
+		dialog.Message("Enter valid delay value").Title("Error").Error()
+		return
+	}
 	delay, _ := strconv.Atoi(ui.delayWindow.delayEntry.Text)
 	ui.cfg.Trade.Links[ui.delayWindow.linkID].Delay = int64(delay)
 	ui.delayWindow.Close()
