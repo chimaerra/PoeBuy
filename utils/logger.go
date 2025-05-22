@@ -23,7 +23,7 @@ func NewLogger() *Logger {
 
 	// Prepare the log file path with the current date and time
 	currentTime := time.Now().Format("2006-01-02")
-	fileName := fmt.Sprintf("log_%s.txt", currentTime)
+	fileName := fmt.Sprintf("log_%s.log", currentTime)
 	filePath := filepath.Join(_logDir, fileName)
 
 	return &Logger{filePath: filePath}

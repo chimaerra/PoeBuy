@@ -57,7 +57,13 @@ func ShowUI(cfg *config.Config, logger *utils.Logger, bot *bot.Bot) {
 			ui.ShowMainWindow()
 		}
 	}
+	bot.UpdateCheckmarkFunc = ui.updateCheckmark
 	ui.app.Run()
+}
+
+func (ui *UI) updateCheckmark(row int) {
+	ui.cfg.Trade.Links[row].IsActiv = false
+	fyne.Do(func() { ui.mainWindow.tradeTable.RefreshItem(widget.TableCellID{Col: 2, Row: row}) })
 }
 
 func (ui *UI) ShowPoessidWindow() {
@@ -123,6 +129,10 @@ func (ui *UI) tableCellClick(id widget.TableCellID) {
 
 	ui.mainWindow.tradeTable.Unselect(id)
 
+	if id.Row < 0 {
+		return
+	}
+
 	switch id.Col {
 	case 2:
 		if ui.cfg.Trade.Links[id.Row].IsActiv {
@@ -131,12 +141,16 @@ func (ui *UI) tableCellClick(id widget.TableCellID) {
 		} else {
 			err := ui.bot.WatchItem(ui.cfg.Trade.Links[id.Row].Code, ui.cfg.Trade.Links[id.Row].Delay)
 			if err != nil {
-				dialog.Message("Link connection error, check the link is correct\n(%v)", err).Title("Live search error").Error()
+				dialog.Message("Link connection error:\n%v", err).Title("Live search error").Error()
 				return
 			}
 			ui.cfg.Trade.Links[id.Row].IsActiv = true
 		}
 	case 3:
+		if ui.cfg.Trade.Links[id.Row].IsActiv {
+			ui.bot.StopWatcher(ui.cfg.Trade.Links[id.Row].Code)
+			ui.cfg.Trade.Links[id.Row].IsActiv = false
+		}
 		ui.cfg.Trade.Links = append(ui.cfg.Trade.Links[:id.Row], ui.cfg.Trade.Links[id.Row+1:]...)
 	case 4:
 		ui.ShowDelayWindow(ui.cfg.Trade.Links[id.Row].Delay, id.Row)

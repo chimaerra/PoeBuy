@@ -12,18 +12,19 @@ import (
 )
 
 type ItemWatcher struct {
-	WSConnection *websocket.Conn
-	Fetcher      *connections.Fetcher
-	Whisper      *connections.Whisper
-	Code         string
-	StopChan     chan string
-	ErrChan      chan error
-	Working      bool
-	Delay        time.Duration
-	readReady    bool
+	WSConnection        *websocket.Conn
+	Fetcher             *connections.Fetcher
+	Whisper             *connections.Whisper
+	Code                string
+	ErrChan             chan error
+	Working             bool
+	Delay               time.Duration
+	readReady           bool
+	index               int
+	UpdateCheckmarkFunc func(int)
 }
 
-func NewItemWatcher(poesseid string, league string, code string, stopChan chan string, errChan chan error, delay int64) (*ItemWatcher, error) {
+func NewItemWatcher(poesseid string, league string, code string, errChan chan error, delay int64, index int, updateCheckmarkFunc func(int)) (*ItemWatcher, error) {
 
 	client := &http.Client{}
 
@@ -33,18 +34,17 @@ func NewItemWatcher(poesseid string, league string, code string, stopChan chan s
 	}
 
 	watcher := &ItemWatcher{
-		WSConnection: wsConn,
-		Fetcher:      connections.NewFetcher(client, headers.GetFetchitemHeaders(poesseid)),
-		Whisper:      connections.NewWhisper(client, headers.GetWhisperHeaders(poesseid)),
-		Code:         code,
-		StopChan:     stopChan,
-		ErrChan:      errChan,
-		Working:      false,
-		Delay:        time.Millisecond * time.Duration(delay),
-		readReady:    true,
+		WSConnection:        wsConn,
+		Fetcher:             connections.NewFetcher(client, headers.GetFetchitemHeaders(poesseid)),
+		Whisper:             connections.NewWhisper(client, headers.GetWhisperHeaders(poesseid)),
+		Code:                code,
+		ErrChan:             errChan,
+		Working:             false,
+		Delay:               time.Millisecond * time.Duration(delay),
+		readReady:           true,
+		index:               index,
+		UpdateCheckmarkFunc: updateCheckmarkFunc,
 	}
-
-	go watcher.Stopper()
 
 	return watcher, nil
 
@@ -65,11 +65,10 @@ func (w *ItemWatcher) Watch() {
 		var ls models.LivesearchNewItem
 		err := w.WSConnection.ReadJSON(&ls)
 		if err != nil {
-			if strings.Contains(err.Error(), "use of closed network connection") {
-				break
+			if !strings.Contains(err.Error(), "use of closed network connection") {
+				w.ErrChan <- err
 			}
-			w.ErrChan <- err
-			continue
+			break
 		}
 		if w.Delay > 0 && !w.readReady {
 			continue
@@ -96,6 +95,8 @@ func (w *ItemWatcher) Watch() {
 
 		w.readReady = false
 	}
+
+	w.Stop()
 }
 
 func (w *ItemWatcher) Stop() {
@@ -103,22 +104,7 @@ func (w *ItemWatcher) Stop() {
 	w.WSConnection.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	w.WSConnection.Close()
 	w.Working = false
-}
-
-func (w *ItemWatcher) Stopper() {
-
-	for {
-		forClose := <-w.StopChan
-		if forClose == w.Code {
-			w.WSConnection.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-			w.WSConnection.Close()
-			w.Working = false
-			return
-		} else {
-			w.StopChan <- forClose
-		}
-	}
-
+	w.UpdateCheckmarkFunc(w.index)
 }
 
 func (w *ItemWatcher) delayer() {

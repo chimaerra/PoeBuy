@@ -8,7 +8,7 @@ import (
 func GetLivesearchHeaders(poesessid string) http.Header {
 	head := http.Header{}
 	head.Add("Accept", "*/*")
-	head.Add("Accept-Encoding", "gzip, deflate, br")
+	head.Add("Accept-Encoding", "gzip, deflate, br, zstd")
 	head.Add("Accept-Language", "ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3")
 	head.Add("Cache-Control", "no-cache")
 	head.Add("Cookie", fmt.Sprintf("POESESSID=%v", poesessid))

@@ -20,13 +20,12 @@ func main() {
 	}
 
 	// Create a new bot instance
-	bot, err := bot.NewBot(cfg, logger)
+	botInstance, err := bot.NewBot(cfg, logger)
 	if err != nil {
 		logger.Errorf("error app initialisation: %v", err)
 		return
 	}
 
-	ui.ShowUI(cfg, logger, bot)
-	return
+	ui.ShowUI(cfg, logger, botInstance)
 
 }

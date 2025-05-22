@@ -8,21 +8,21 @@ import (
 
 // App is the main application struct
 type Bot struct {
-	config   *config.Config
-	Watchers []*watchers.ItemWatcher
-	stopChan chan string
-	ErrChan  chan error
-	logger   *utils.Logger
+	config              *config.Config
+	Watchers            map[string]*watchers.ItemWatcher
+	ErrChan             chan error
+	logger              *utils.Logger
+	UpdateCheckmarkFunc func(int)
 }
 
 // Init initializes the application
 func NewBot(cfg *config.Config, logger *utils.Logger) (*Bot, error) {
 
 	bot := &Bot{
-		stopChan: make(chan string),
 		ErrChan:  make(chan error),
 		config:   cfg,
 		logger:   logger,
+		Watchers: make(map[string]*watchers.ItemWatcher),
 	}
 
 	go bot.errorWriter()
@@ -31,12 +31,22 @@ func NewBot(cfg *config.Config, logger *utils.Logger) (*Bot, error) {
 }
 
 func (bot *Bot) WatchItem(code string, delay int64) error {
-	watcher, err := watchers.NewItemWatcher(bot.config.General.Poesessid, bot.config.Trade.League, code, bot.stopChan, bot.ErrChan, delay)
+
+	var index int
+
+	for i, _ := range bot.config.Trade.Links {
+		if bot.config.Trade.Links[i].Code == code {
+			index = i
+			break
+		}
+	}
+
+	watcher, err := watchers.NewItemWatcher(bot.config.General.Poesessid, bot.config.Trade.League, code, bot.ErrChan, delay, index, bot.UpdateCheckmarkFunc)
 	if err != nil {
 		return err
 	}
 
-	bot.Watchers = append(bot.Watchers, watcher)
+	bot.Watchers[code] = watcher
 
 	go watcher.Watch()
 
@@ -44,7 +54,8 @@ func (bot *Bot) WatchItem(code string, delay int64) error {
 }
 
 func (bot *Bot) StopWatcher(code string) {
-	bot.stopChan <- code
+	bot.Watchers[code].Stop()
+	delete(bot.Watchers, code)
 }
 
 // Stop closes the application and cleans up

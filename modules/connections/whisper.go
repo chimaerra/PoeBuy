@@ -2,8 +2,11 @@ package connections
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"poebuy/modules/connections/models"
 )
 
 type Whisper struct {
@@ -34,7 +37,10 @@ func (w *Whisper) Whisper(token string) error {
 	defer whisperResp.Body.Close()
 
 	if whisperResp.StatusCode != 200 {
-		return fmt.Errorf("Whisper error: %v", whisperResp.Status)
+		errorMsg := &models.WhisperErrorResponse{}
+		r, _ := io.ReadAll(whisperResp.Body)
+		json.Unmarshal(r, errorMsg)
+		return fmt.Errorf("Whisper error: %v %v", whisperResp.Status, errorMsg.Error.Message)
 	}
 
 	return nil

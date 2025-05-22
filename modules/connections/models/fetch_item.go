@@ -25,9 +25,9 @@ type FetchItem struct {
 				Realm             string `json:"realm"`
 			} `json:"account"`
 			Price struct {
-				Type     string `json:"type"`
-				Amount   int    `json:"amount"`
-				Currency string `json:"currency"`
+				Type     string  `json:"type"`
+				Amount   float64 `json:"amount"`
+				Currency string  `json:"currency"`
 			} `json:"price"`
 		} `json:"listing"`
 		Item struct {
