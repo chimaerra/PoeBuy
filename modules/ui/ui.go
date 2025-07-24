@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"poebuy/config"
 	"poebuy/modules/bot"
 	"poebuy/modules/connections"
@@ -121,6 +122,10 @@ func (ui *UI) addTrade() {
 		}
 	}
 	ui.cfg.Trade.Links = append(ui.cfg.Trade.Links, config.Link{Name: ui.mainWindow.nameEntry.Text, Code: inputLink})
+	err := ui.cfg.Save()
+		if err != nil {
+		dialog.Message(fmt.Sprintf("Error saving config: %v", err)).Title("Error").Error()
+	}
 	ui.mainWindow.nameEntry.SetText("")
 	ui.mainWindow.linkEntry.SetText("")
 }
@@ -152,6 +157,10 @@ func (ui *UI) tableCellClick(id widget.TableCellID) {
 			ui.cfg.Trade.Links[id.Row].IsActiv = false
 		}
 		ui.cfg.Trade.Links = append(ui.cfg.Trade.Links[:id.Row], ui.cfg.Trade.Links[id.Row+1:]...)
+		err := ui.cfg.Save()
+			if err != nil {
+				dialog.Message(fmt.Sprintf("Error saving config: %v", err)).Title("Error").Error()
+		}
 	case 4:
 		ui.ShowDelayWindow(ui.cfg.Trade.Links[id.Row].Delay, id.Row)
 	default:
@@ -161,7 +170,10 @@ func (ui *UI) tableCellClick(id widget.TableCellID) {
 }
 
 func (ui *UI) closeApp() {
-	ui.cfg.Save()
+    if err := ui.cfg.Save(); err != nil {
+        // Log error - adjust as needed
+        println("Error saving config on app close:", err.Error())
+    }
 	ui.bot.StopAllWatchers()
 }
 
@@ -172,5 +184,9 @@ func (ui *UI) saveDelay() {
 	}
 	delay, _ := strconv.Atoi(ui.delayWindow.delayEntry.Text)
 	ui.cfg.Trade.Links[ui.delayWindow.linkID].Delay = int64(delay)
+	err := ui.cfg.Save()
+		if err != nil {
+			dialog.Message(fmt.Sprintf("Error saving config: %v", err)).Title("Error").Error()
+		}
 	ui.delayWindow.Close()
 }
