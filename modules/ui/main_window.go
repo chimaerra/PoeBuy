@@ -50,11 +50,12 @@ type MainWindow struct {
 	linkEntry      *widget.Entry
 	addTradeButton *widget.Button
 	tradeTable     *widget.Table
+	config         *config.Config
 }
 
 func NewMainWindow(app fyne.App, info *models.TradeInfo, cfg *config.Config) *MainWindow {
 
-	mw := &MainWindow{}
+	mw := &MainWindow{config: cfg}
 
 	mw.Window = app.NewWindow("PoeBuy")
 	mw.SetFixedSize(true)
@@ -67,7 +68,7 @@ func NewMainWindow(app fyne.App, info *models.TradeInfo, cfg *config.Config) *Ma
 	mw.leagueSelect = leagueSelect
 	leagueSelect.Move(fyne.NewPos(15, 50))
 	leagueSelect.Resize(fyne.NewSize(350, 35))
-	leagueSelect.PlaceHolder = "Select legaue"
+	leagueSelect.PlaceHolder = "Select league"
 	leagueSelect.SetSelected(cfg.Trade.League)
 	leagueSelect.Refresh()
 
@@ -137,7 +138,19 @@ func NewMainWindow(app fyne.App, info *models.TradeInfo, cfg *config.Config) *Ma
 				
 				// Create tappable label for copying
 				tappable := NewTappableLabel(cfg.Trade.Links[i.Row].Code, func() {
-					mw.Clipboard().SetContent(cfg.Trade.Links[i.Row].Code)
+					// Get the selected league
+					league := mw.leagueSelect.Selected
+					if league == "" {
+						// Fallback to config league if nothing selected
+						league = cfg.Trade.League
+					}
+					
+					// Create full trade URL with spaces preserved
+					fullURL := fmt.Sprintf("https://www.pathofexile.com/trade/search/%s/%s", 
+						league, 
+						cfg.Trade.Links[i.Row].Code)
+					
+					mw.Clipboard().SetContent(fullURL)
 				})
 				tappable.Wrapping = fyne.TextTruncate
 				container.Objects = append(container.Objects, tappable)
