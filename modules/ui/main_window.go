@@ -10,9 +10,37 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
+
+// TappableLabel is a label that can be tapped and shows pointer cursor
+type TappableLabel struct {
+	widget.Label
+	OnTapped func()
+}
+
+func NewTappableLabel(text string, tapped func()) *TappableLabel {
+	t := &TappableLabel{
+		Label: widget.Label{
+			Text: text,
+		},
+		OnTapped: tapped,
+	}
+	t.ExtendBaseWidget(t)
+	return t
+}
+
+func (t *TappableLabel) Tapped(_ *fyne.PointEvent) {
+	if t.OnTapped != nil {
+		t.OnTapped()
+	}
+}
+
+func (t *TappableLabel) Cursor() desktop.Cursor {
+	return desktop.PointerCursor
+}
 
 type MainWindow struct {
 	fyne.Window
@@ -77,7 +105,6 @@ func NewMainWindow(app fyne.App, info *models.TradeInfo, cfg *config.Config) *Ma
 	addTradeButton.Move(fyne.NewPos(580, 240))
 	addTradeButton.Resize(fyne.NewSize(200, 40))
 
-	// tradeTable := widget.NewTableWithHeaders(nil, nil, nil)
 	tradeTable := widget.NewTable(
 		func() (int, int) {
 			return len(cfg.Trade.Links), 5
@@ -94,15 +121,26 @@ func NewMainWindow(app fyne.App, info *models.TradeInfo, cfg *config.Config) *Ma
 			label := container.Objects[0].(*widget.Label)
 			icon := container.Objects[1].(*widget.Icon)
 
+			// Clear any existing tappable labels beyond the first two objects
+			if len(container.Objects) > 2 {
+				container.Objects = container.Objects[:2]
+			}
+
 			switch i.Col {
 			case 0:
 				label.Show()
 				icon.Hide()
 				label.SetText(cfg.Trade.Links[i.Row].Name)
-			case 1:
-				label.Show()
+			case 1: // Link column
+				label.Hide()
 				icon.Hide()
-				label.SetText(cfg.Trade.Links[i.Row].Code)
+				
+				// Create tappable label for copying
+				tappable := NewTappableLabel(cfg.Trade.Links[i.Row].Code, func() {
+					mw.Clipboard().SetContent(cfg.Trade.Links[i.Row].Code)
+				})
+				tappable.Wrapping = fyne.TextTruncate
+				container.Objects = append(container.Objects, tappable)
 			case 2:
 				label.Hide()
 				icon.Show()
