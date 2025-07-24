@@ -41,7 +41,17 @@ func (bot *Bot) WatchItem(code string, delay int64) error {
 		}
 	}
 
-	watcher, err := watchers.NewItemWatcher(bot.config.General.Poesessid, bot.config.Trade.League, code, bot.ErrChan, delay, index, bot.UpdateCheckmarkFunc)
+	soundFile := bot.config.General.SoundFile
+	watcher, err := watchers.NewItemWatcher(
+        bot.config.General.Poesessid,
+        bot.config.Trade.League,
+        code,
+        bot.ErrChan,
+        delay,
+        index,
+        bot.UpdateCheckmarkFunc,
+        soundFile,
+    )
 	if err != nil {
 		return err
 	}

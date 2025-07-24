@@ -24,7 +24,7 @@ type ItemWatcher struct {
 	UpdateCheckmarkFunc func(int)
 }
 
-func NewItemWatcher(poesseid string, league string, code string, errChan chan error, delay int64, index int, updateCheckmarkFunc func(int)) (*ItemWatcher, error) {
+func NewItemWatcher(poesseid string, league string, code string, errChan chan error, delay int64, index int, updateCheckmarkFunc func(int), soundFile string) (*ItemWatcher, error) {
 
 	client := &http.Client{}
 
@@ -36,7 +36,7 @@ func NewItemWatcher(poesseid string, league string, code string, errChan chan er
 	watcher := &ItemWatcher{
 		WSConnection:        wsConn,
 		Fetcher:             connections.NewFetcher(client, headers.GetFetchitemHeaders(poesseid)),
-		Whisper:             connections.NewWhisper(client, headers.GetWhisperHeaders(poesseid)),
+		Whisper:             connections.NewWhisper(client, headers.GetWhisperHeaders(poesseid), soundFile),
 		Code:                code,
 		ErrChan:             errChan,
 		Working:             false,

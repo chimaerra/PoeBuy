@@ -1,11 +1,10 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"poebuy/utils"
-
-	"errors"
 
 	"github.com/ilyakaznacheev/cleanenv"
 )
@@ -20,6 +19,7 @@ type Config struct {
 
 type General struct {
 	Poesessid string `yaml:"poesessid"`
+	SoundFile string `yaml:"sound_file"`
 }
 
 type Trade struct {
@@ -40,6 +40,7 @@ func LoadConfig() (*Config, error) {
 	cfg := &Config{}
 
 	if !configFileExists() {
+		cfg.General.SoundFile = "notify.wav"
 		return cfg, ErrorNoConfigFile
 	}
 
@@ -53,11 +54,23 @@ func LoadConfig() (*Config, error) {
 	return cfg, nil
 }
 
-func (cfg *Config) Save() {
-	encPoe, _ := utils.Encrypt(cfg.General.Poesessid)
-	cfg.General.Poesessid = encPoe
 
-	utils.WriteStructToYAMLFile("config.yaml", cfg)
+// Save saves the config to file, encrypting the Poesessid
+func (cfg *Config) Save() error {
+    // Make a copy of cfg to avoid modifying original in-memory struct
+    tempCfg := *cfg
+
+    encPoe, err := utils.Encrypt(cfg.General.Poesessid)
+    if err != nil {
+        return err
+    }
+    tempCfg.General.Poesessid = encPoe
+
+    err = utils.WriteStructToYAMLFile("config.yaml", &tempCfg)
+    if err != nil {
+        return err
+    }
+    return nil
 }
 
 func configFileExists() bool {

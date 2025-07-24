@@ -7,17 +7,20 @@ import (
 	"io"
 	"net/http"
 	"poebuy/modules/connections/models"
+	"poebuy/utils"
 )
 
 type Whisper struct {
 	Client *http.Client
 	Header http.Header
+	SoundFile string
 }
 
-func NewWhisper(client *http.Client, header http.Header) *Whisper {
+func NewWhisper(client *http.Client, header http.Header, soundFile string) *Whisper {
 	return &Whisper{
 		Client: client,
 		Header: header,
+		SoundFile: soundFile,
 	}
 }
 
@@ -43,5 +46,7 @@ func (w *Whisper) Whisper(token string) error {
 		return fmt.Errorf("Whisper error: %v %v", whisperResp.Status, errorMsg.Error.Message)
 	}
 
+	// Play sound on successful whisper
+	_ = utils.PlaySound(w.SoundFile) // ignore error, optionally log
 	return nil
 }
